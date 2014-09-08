@@ -2,7 +2,8 @@
   (:require [clojure.java.io :as io]
             [clojure.set :as clj-set]
             [clojure.tools.cli :refer [parse-opts]]
-            [kba-index-discovery.download-landing-pages :as download-index-pages])
+            [kba-index-discovery.download-landing-pages :as download-index-pages]
+            [kba-index-discovery.process-downloaded-corpus :as process-corpus])
   (:import [java.io PushbackReader])
   (:use [clojure.pprint :only [pprint]]))
 
@@ -43,14 +44,19 @@
    records))
 
 (def cli-options
-  [[nil "--download-index-pages" "Download index pages and build a simple corpus"]])
+  [[nil "--download-index-pages" "Download index pages and build a simple corpus"]
+   [nil "--process-landing-pages J" "Process downloaded pages"]])
 
 (defn -main
   [& args]
   (let [options (-> args (parse-opts cli-options) :options)]
     (cond (:download-index-pages options)
-          (let [wrtr (io/writer "/bos/tmp19/spalakod/index-pages.clj" :append true)]
+          (let [wrtr (io/writer "/bos/tmp19/spalakod/kba-index-pages-discovery/" :append true)]
             (download-index-pages/get-corpora wrtr))
+
+          (:process-landing-pages options)
+          (process-corpus/acquire-index-pages
+           (:process-landing-pages options))
           
           :else
           (load-index-names-file
