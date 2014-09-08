@@ -82,11 +82,22 @@
      crawl-log-lines)))
 
 (defn resolve-redirects
-  [a-uri redirect-graph]
-  (if (nil? (get redirect-graph a-uri))
-    a-uri
-    (recur (get redirect-graph a-uri)
-           redirect-graph)))
+  ([a-uri redirect-graph]
+     (resolve-redirects a-uri redirect-graph 0))
+
+  ([a-uri redirect-graph depth]
+     (cond (nil? (get redirect-graph a-uri))
+           a-uri
+
+           (>= depth 6)
+           a-uri
+           
+           :else
+           (do ;(println :redirecting a-uri :to (get redirect-graph a-uri))
+               (flush)
+               (recur (get redirect-graph a-uri)
+                      redirect-graph
+                      (inc depth))))))
 
 (defn acquire-index-pages
   [job-dir]
@@ -96,28 +107,28 @@
         redirect-graph (build-redirect-graph job-dir)]
     (doseq [[url index-names] uri-indices]
       (when url
-        (let [resolved-url (resolve-redirects url)
+        (let [resolved-url (resolve-redirects url redirect-graph)
               payload (get payloads resolved-url)
-             html-index (try (.indexOf payload "<")
-                             (catch Exception e -1))
-             html-content (if (neg? html-index)
-                            nil
-                            (subs payload
-                                  html-index))
-
-             links
-             (when html-content
-               (-> html-content
-                   (StringReader.)
-                   html/html-resource
-                   (html/select [:a])))]
-         (doseq [index-page-link
-                 (map
-                  #(try (->> % :attrs :href (uri/resolve-uri url))
-                        (catch Exception e nil))
-                  (filter
-                   (fn [a-tag]
-                     (some #{(html/text a-tag)}
-                           index-names))
-                   links))]
-           (println index-page-link)))))))
+              html-index (try (.indexOf payload "<")
+                              (catch Exception e -1))
+              html-content (if (neg? html-index)
+                             nil
+                             (subs payload
+                                   html-index))
+              
+              links
+              (when html-content
+                (-> html-content
+                    (StringReader.)
+                    html/html-resource
+                    (html/select [:a])))]
+          (doseq [index-page-link
+                  (map
+                   #(try (->> % :attrs :href (uri/resolve-uri resolved-url))
+                         (catch Exception e nil))
+                   (filter
+                    (fn [a-tag]
+                      (some #{(html/text a-tag)}
+                            index-names))
+                    links))]
+            (println index-page-link)))))))
