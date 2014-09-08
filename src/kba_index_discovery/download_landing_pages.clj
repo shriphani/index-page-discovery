@@ -26,17 +26,18 @@
     (doall
      (doseq [[uri index-names] index-stuff]
        (println uri)
-       (let [_    (try (client/get uri {:throw-exceptions false
-                                        :cookie-store cookie-store
-                                        :conn-timeout 5000})
-                       (catch Exception e {}))
-             resp (try (client/get uri {:throw-exceptions false
-                                        :cookie-store cookie-store
-                                        :conn-timeout 5000})
-                       (catch Exception e {}))]
-         (do (println :downloading uri)
-             (pprint
-              (merge resp
-                     {:index-names index-names})
-              wrtr)
-             (flush)))))))
+       ;; (let [_    (try (client/get uri {:throw-exceptions false
+       ;;                                  :cookie-store cookie-store
+       ;;                                  :conn-timeout 5000})
+       ;;                 (catch Exception e {}))
+       ;;       resp (try (client/get uri {:throw-exceptions false
+       ;;                                  :cookie-store cookie-store
+       ;;                                  :conn-timeout 5000})
+       ;;                 (catch Exception e {}))]
+       ;;   (do (println :downloading uri)
+       ;;       (pprint
+       ;;        (merge resp
+       ;;               {:index-names index-names})
+       ;;        wrtr)
+       ;;       (flush)))
+       ))))

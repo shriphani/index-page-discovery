@@ -49,7 +49,7 @@
   [& args]
   (let [options (-> args (parse-opts cli-options) :options)]
     (cond (:download-index-pages options)
-          (let [wrtr (io/writer "/bos/tmp19/spalakod/index-pages.clj")]
+          (let [wrtr (io/writer "/bos/tmp19/spalakod/index-pages.clj" :append true)]
             (download-index-pages/get-corpora wrtr))
           
           :else
