@@ -60,14 +60,44 @@
                    (:payload record)}))
      records)))
 
+(defn build-redirect-graph
+  "Return a redirect graph"
+  [heritrix-job]
+  (let [crawl-log-file  (str heritrix-job "/latest/logs/crawl.log")
+        crawl-log-lines (string/split-lines
+                         (slurp crawl-log-file))]
+    (reduce
+     (fn [acc l]
+       (let [split-line (string/split l #"\s+")
+             
+             timestamp (nth split-line 0)
+             code      (nth split-line 1)
+             link      (nth split-line 3)
+             redir?    (re-find #"R" (nth split-line 4))
+             src-link  (nth split-line 5)]
+         (if redir?
+           (merge acc {src-link link})
+           acc)))
+     {}
+     crawl-log-lines)))
+
+(defn resolve-redirects
+  [a-uri redirect-graph]
+  (if (nil? (get redirect-graph a-uri))
+    a-uri
+    (recur (get redirect-graph a-uri)
+           redirect-graph)))
+
 (defn acquire-index-pages
   [job-dir]
   (let [payloads    (load-job-warcs job-dir)
         crawl-log   (load-crawl-log job-dir)
-        uri-indices (load-index-names)]
+        uri-indices (load-index-names)
+        redirect-graph (build-redirect-graph job-dir)]
     (doseq [[url index-names] uri-indices]
       (when url
-       (let [payload    (get payloads url)
+        (let [resolved-url (resolve-redirects url)
+              payload (get payloads resolved-url)
              html-index (try (.indexOf payload "<")
                              (catch Exception e -1))
              html-content (if (neg? html-index)
