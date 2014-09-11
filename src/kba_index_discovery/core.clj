@@ -3,7 +3,8 @@
             [clojure.set :as clj-set]
             [clojure.tools.cli :refer [parse-opts]]
             [kba-index-discovery.download-landing-pages :as download-index-pages]
-            [kba-index-discovery.process-downloaded-corpus :as process-corpus])
+            [kba-index-discovery.process-downloaded-corpus :as process-corpus]
+            [kba-index-discovery.sampler :as sampler])
   (:import [java.io PushbackReader])
   (:use [clojure.pprint :only [pprint]]))
 
@@ -45,7 +46,8 @@
 
 (def cli-options
   [[nil "--download-index-pages" "Download index pages and build a simple corpus"]
-   [nil "--process-landing-pages J" "Process downloaded pages"]])
+   [nil "--process-landing-pages J" "Process downloaded pages"]
+   [nil "--sampler I" "Sample index pages"]])
 
 (defn -main
   [& args]
@@ -57,6 +59,10 @@
           (:process-landing-pages options)
           (process-corpus/acquire-index-pages
            (:process-landing-pages options))
+
+          (:sampler options)
+          (let [index-pages-file (:sampler options)]
+            (sampler/sample index-pages-file))
           
           :else
           (load-index-names-file
